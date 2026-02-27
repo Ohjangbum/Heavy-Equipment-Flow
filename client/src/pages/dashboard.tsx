@@ -16,7 +16,7 @@ export default function Dashboard() {
   const totalProjects = projects?.length || 0;
   const activeWOs = projects?.filter((p: any) => p.woStatus === "processing").length || 0;
   const totalRevenue = projects?.reduce((sum: number, p: any) => sum + (p.quoteAmount || 0), 0) || 0;
-  const totalProfit = projects?.reduce((sum: number, p: any) => sum + (p.profitLoss || 0), 0) || 0;
+  const totalProfit = projects?.reduce((sum: number, p: any) => sum + (p.invoiceStatus === "paid" ? (p.profitLoss || 0) : 0), 0) || 0;
 
   if (isLoading) {
     return (
@@ -122,6 +122,7 @@ export default function Dashboard() {
                     <th className="px-6 py-3 font-medium text-muted-foreground text-right">Tech. Cost</th>
                     <th className="px-6 py-3 font-medium text-muted-foreground text-right">Profit/Loss</th>
                     <th className="px-6 py-3 font-medium text-muted-foreground">Invoice</th>
+                    <th className="px-6 py-3 font-medium text-muted-foreground">Payment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,14 +153,21 @@ export default function Dashboard() {
                         <td className="px-6 py-3 text-right font-medium">{formatCurrency(p.quoteAmount)}</td>
                         <td className="px-6 py-3 text-right">{formatCurrency(p.woBudget)}</td>
                         <td className="px-6 py-3 text-right">{formatCurrency(p.technicianCost)}</td>
-                        <td className={`px-6 py-3 text-right font-bold ${p.profitLoss >= 0 ? "text-green-600" : "text-red-600"}`}>
-                          {formatCurrency(p.profitLoss)}
+                        <td className={`px-6 py-3 text-right font-bold ${p.invoiceStatus === "paid" ? (p.profitLoss >= 0 ? "text-green-600" : "text-red-600") : "text-muted-foreground"}`}>
+                          {p.invoiceStatus === "paid" ? formatCurrency(p.profitLoss) : "-"}
                         </td>
                         <td className="px-6 py-3">
                           {p.invoice ? (
                             <Link href={`/invoices/${p.invoiceId}`} className="text-primary">
                               {p.invoice}
                             </Link>
+                          ) : <span className="text-muted-foreground">-</span>}
+                        </td>
+                        <td className="px-6 py-3">
+                          {p.invoiceStatus === "paid" ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Paid</Badge>
+                          ) : p.invoice ? (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Unpaid</Badge>
                           ) : <span className="text-muted-foreground">-</span>}
                         </td>
                       </tr>

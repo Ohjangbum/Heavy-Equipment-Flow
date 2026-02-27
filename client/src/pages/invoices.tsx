@@ -55,7 +55,12 @@ export default function Invoices() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">{formatCurrency(inv.total)}</p>
-                    <Badge variant="secondary" className="text-xs capitalize">{inv.status}</Badge>
+                    <Badge
+                      variant="secondary"
+                      className={`text-xs ${inv.status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
+                    >
+                      {inv.status === "paid" ? "Paid" : "Unpaid"}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

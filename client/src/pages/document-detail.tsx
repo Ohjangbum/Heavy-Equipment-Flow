@@ -378,14 +378,33 @@ export function WorkOrderDetail() {
 
 export function InvoiceDetail() {
   const [, params] = useRoute("/invoices/:id");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isAdmin = (user as any)?.role === "admin";
+
   const { data, isLoading } = useQuery<any>({
     queryKey: ["/api/invoices", params?.id],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!params?.id,
   });
 
+  const markPaidMut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", `/api/invoices/${params?.id}/mark-paid`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Invoice marked as paid" });
+    },
+  });
+
   if (isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
   if (!data) return <div className="p-6">Invoice not found</div>;
+
+  const isPaid = data.status === "paid";
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
@@ -395,13 +414,36 @@ export function InvoiceDetail() {
             <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold" data-testid="text-inv-detail-title">INV/{data.projectNumber}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold" data-testid="text-inv-detail-title">INV/{data.projectNumber}</h1>
+              <Badge
+                variant="secondary"
+                className={isPaid ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}
+                data-testid="badge-inv-status"
+              >
+                {isPaid ? "Paid" : "Unpaid"}
+              </Badge>
+            </div>
             <p className="text-sm text-muted-foreground">{data.client?.name} - {data.date}</p>
           </div>
         </div>
-        <Button onClick={() => generateInvoicePDF(data)} data-testid="button-download-pdf">
-          <Download className="w-4 h-4 mr-2" /> Download PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && !isPaid && (
+            <Button
+              variant="default"
+              onClick={() => markPaidMut.mutate()}
+              disabled={markPaidMut.isPending}
+              data-testid="button-mark-paid"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {markPaidMut.isPending ? "Processing..." : "Mark as Paid"}
+            </Button>
+          )}
+          <Button onClick={() => generateInvoicePDF(data)} data-testid="button-download-pdf">
+            <Download className="w-4 h-4 mr-2" /> Download PDF
+          </Button>
+        </div>
       </div>
 
       {data.poNumber && (

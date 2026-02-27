@@ -417,6 +417,21 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/invoices/:id/mark-paid", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const updated = await storage.updateInvoiceStatus(parseInt(req.params.id), "paid");
+      if (!updated) return res.status(404).json({ message: "Invoice not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update invoice status" });
+    }
+  });
+
   app.get("/api/search", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

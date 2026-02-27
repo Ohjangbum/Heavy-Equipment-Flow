@@ -35,9 +35,17 @@ Heavy equipment workshop document management web app for CV UTAMA SINERGI BERKAR
 4. Technician accepts WO → status: processing
 5. Technician completes WO → adds expenditure rows (description + cost, auto-totaled) → status: completed
 6. Admin creates Invoice → linked to same project number (INV/10000)
+7. Admin marks Invoice as Paid → profit/loss appears on dashboard
+
+## Invoice Status
+- Invoices start as "draft" (displayed as "Unpaid")
+- Admin can mark as "paid" via the invoice detail page
+- Endpoint: `PATCH /api/invoices/:id/mark-paid`
 
 ## Profit/Loss Calculation
 `Profit = Quote Amount - WO Budget - Technician Cost`
+- Profit/loss only displays on dashboard when the invoice is marked as "paid"
+- Total Profit summary card only sums projects with paid invoices
 
 ## Roles
 - **admin**: Full access to all documents, dashboard, user management

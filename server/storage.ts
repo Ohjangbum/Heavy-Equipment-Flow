@@ -83,6 +83,7 @@ export interface IStorage {
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   deleteInvoice(id: number): Promise<void>;
+  updateInvoiceStatus(id: number, status: string): Promise<Invoice>;
 
   getInvoiceItems(invoiceId: number): Promise<InvoiceItem[]>;
   createInvoiceItem(item: InsertInvoiceItem): Promise<InvoiceItem>;
@@ -286,6 +287,11 @@ export class DatabaseStorage implements IStorage {
     await db.delete(invoices).where(eq(invoices.id, id));
   }
 
+  async updateInvoiceStatus(id: number, status: string): Promise<Invoice> {
+    const [updated] = await db.update(invoices).set({ status }).where(eq(invoices.id, id)).returning();
+    return updated;
+  }
+
   async getInvoiceItems(invoiceId: number): Promise<InvoiceItem[]> {
     return db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
   }
@@ -386,6 +392,7 @@ export class DatabaseStorage implements IStorage {
         workOrderId: wo?.id,
         invoiceId: inv?.id,
         invoice: inv ? `INV/${pn}` : null,
+        invoiceStatus: inv?.status || null,
         quoteAmount,
         woBudget,
         technicianCost: techCost,

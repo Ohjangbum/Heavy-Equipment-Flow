@@ -10,6 +10,12 @@ Heavy equipment workshop document management web app for CV UTAMA SINERGI BERKAR
 - Object Storage integration (PO file uploads)
 - PDF generation via jsPDF + jspdf-autotable (client-side)
 
+## Theme & Branding
+- Trakindo/heavy equipment industry style: yellow/gold primary (#FFCC00), dark navy sidebar
+- Font: Inter (sans-serif)
+- Company logo displayed in sidebar header (attached_assets/logo.png)
+- Semantic status colors preserved: blue=processing, green=paid, yellow=unpaid, red=destructive
+
 ## User System
 - Users get auto-generated 4-digit employee IDs (starting from 1001)
 - Users can set their display name via Profile page (`/profile`)

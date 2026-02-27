@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import logoPath from "@assets/logo.png";
 
 const adminItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -58,13 +59,11 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-            <Wrench className="w-4 h-4 text-primary-foreground" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src={logoPath} alt="Logo" className="w-10 h-10 rounded-md object-contain bg-white p-0.5" data-testid="img-logo" />
           <div>
-            <p className="text-sm font-semibold">Workshop Manager</p>
-            <p className="text-xs text-muted-foreground">CV USB DocFlow</p>
+            <p className="text-sm font-bold tracking-tight leading-tight" data-testid="text-company-name">CV UTAMA SINERGI BERKARYA</p>
+            <p className="text-xs text-sidebar-foreground/60">Workshop Manager</p>
           </div>
         </div>
       </SidebarHeader>

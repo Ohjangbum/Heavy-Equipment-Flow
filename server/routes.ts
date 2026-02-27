@@ -175,6 +175,17 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/purchase-orders/:id", isAuthenticated, async (req, res) => {
+    try {
+      const po = await storage.getPurchaseOrder(parseInt(req.params.id));
+      if (!po) return res.status(404).json({ message: "Not found" });
+      const client = await storage.getClient(po.clientId);
+      res.json({ ...po, client });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch purchase order" });
+    }
+  });
+
   app.post("/api/purchase-orders", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

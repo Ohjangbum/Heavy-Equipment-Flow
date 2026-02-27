@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Download, Check, Play } from "lucide-react";
+import { ArrowLeft, Download, Check, Play, FileIcon, ExternalLink } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { formatCurrency, WO_STATUS_MAP } from "@/lib/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -482,6 +482,85 @@ export function ProjectDetail() {
                 })()}
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+export function PurchaseOrderDetail() {
+  const [, params] = useRoute("/purchase-orders/:id");
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ["/api/purchase-orders", params?.id],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!params?.id,
+  });
+
+  if (isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+  if (!data) return <div className="p-6">Purchase Order not found</div>;
+
+  return (
+    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+      <div className="flex items-center gap-3">
+        <Link href="/purchase-orders">
+          <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-po-detail-title">{data.poNumber}</h1>
+          <p className="text-sm text-muted-foreground">Project: {data.projectNumber} - {data.client?.name}</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">PO Number</p>
+              <p className="font-medium">{data.poNumber}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Project Number</p>
+              <Link href={`/project/${data.projectNumber}`} className="font-medium text-primary">
+                {data.projectNumber}
+              </Link>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Client</p>
+              <p className="font-medium">{data.client?.name || "-"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Date Received</p>
+              <p className="font-medium">{data.dateReceived}</p>
+            </div>
+            {data.notes && (
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Notes</p>
+                <p className="font-medium">{data.notes}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {data.fileUrl && (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground mb-3">Attached PO Document</p>
+            <a
+              href={data.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 border rounded-md hover:bg-muted/50 transition-colors"
+              data-testid="link-po-file"
+            >
+              <FileIcon className="w-8 h-8 text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="font-medium text-sm">PO Document</p>
+                <p className="text-xs text-muted-foreground">Click to view/download</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground" />
+            </a>
           </CardContent>
         </Card>
       )}

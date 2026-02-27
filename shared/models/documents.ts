@@ -44,6 +44,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   clientId: integer("client_id").notNull(),
   dateReceived: text("date_received").notNull(),
   notes: text("notes"),
+  fileUrl: text("file_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

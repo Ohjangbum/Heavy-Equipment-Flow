@@ -39,22 +39,24 @@ export default function PurchaseOrdersList() {
       ) : (
         <div className="space-y-3">
           {pos.map((po) => (
-            <Card key={po.id} className="hover-elevate" data-testid={`card-po-${po.id}`}>
-              <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                    <ShoppingCart className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            <Link key={po.id} href={`/purchase-orders/${po.id}`}>
+              <Card className="hover-elevate cursor-pointer" data-testid={`card-po-${po.id}`}>
+                <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{po.poNumber}</p>
+                      <p className="text-sm text-muted-foreground">Project: {po.projectNumber}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">{po.poNumber}</p>
-                    <p className="text-sm text-muted-foreground">Project: {po.projectNumber}</p>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">{po.dateReceived}</p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{po.dateReceived}</p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

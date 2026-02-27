@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, FileIcon, X } from "lucide-react";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import type { Client } from "@shared/schema";
 
 export default function CreatePurchaseOrder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: clientsList } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -26,6 +27,8 @@ export default function CreatePurchaseOrder() {
   const [clientId, setClientId] = useState("");
   const [dateReceived, setDateReceived] = useState(new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }));
   const [notes, setNotes] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleProjectNumberChange = async (val: string) => {
     setProjectNumber(val);
@@ -40,6 +43,36 @@ export default function CreatePurchaseOrder() {
           }
         }
       } catch (e) { /* ignore */ }
+    }
+  };
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+      const metaRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+        }),
+      });
+
+      if (!metaRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await metaRes.json();
+
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) throw new Error("Failed to upload file");
+      return objectPath;
+    } catch (error) {
+      console.error("Upload error:", error);
+      return null;
     }
   };
 
@@ -58,11 +91,25 @@ export default function CreatePurchaseOrder() {
     },
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!poNumber || !projectNumber || !clientId) {
       toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
+
+    setIsUploading(true);
+    let fileUrl: string | null = null;
+
+    if (selectedFile) {
+      fileUrl = await uploadFile(selectedFile);
+      if (!fileUrl) {
+        toast({ title: "Failed to upload file", variant: "destructive" });
+        setIsUploading(false);
+        return;
+      }
+    }
+
+    setIsUploading(false);
 
     createPOMut.mutate({
       poNumber,
@@ -70,7 +117,19 @@ export default function CreatePurchaseOrder() {
       clientId: parseInt(clientId),
       dateReceived,
       notes: notes || null,
+      fileUrl,
     });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: "File too large", description: "Maximum file size is 10MB", variant: "destructive" });
+        return;
+      }
+      setSelectedFile(file);
+    }
   };
 
   return (
@@ -133,16 +192,63 @@ export default function CreatePurchaseOrder() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader><CardTitle>PO Document (from client)</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={handleFileSelect}
+            className="hidden"
+            data-testid="input-file"
+          />
+
+          {selectedFile ? (
+            <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+              <FileIcon className="w-8 h-8 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{selectedFile.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(selectedFile.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                data-testid="button-remove-file"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              data-testid="button-upload-area"
+            >
+              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm font-medium">Click to upload PO document</p>
+              <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (max 10MB)</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end gap-3">
         <Link href="/purchase-orders">
           <Button variant="outline">Cancel</Button>
         </Link>
         <Button
           onClick={handleSubmit}
-          disabled={createPOMut.isPending}
+          disabled={createPOMut.isPending || isUploading}
           data-testid="button-save-po"
         >
-          {createPOMut.isPending ? "Saving..." : "Save PO"}
+          {isUploading ? "Uploading..." : createPOMut.isPending ? "Saving..." : "Save PO"}
         </Button>
       </div>
     </div>

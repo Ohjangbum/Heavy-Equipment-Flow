@@ -19,7 +19,7 @@ import PurchaseOrdersList from "@/pages/purchase-orders";
 import CreatePurchaseOrder from "@/pages/create-purchase-order";
 import SearchPage from "@/pages/search";
 import UsersPage from "@/pages/users";
-import { QuotationDetail, WorkOrderDetail, InvoiceDetail, ProjectDetail } from "@/pages/document-detail";
+import { QuotationDetail, WorkOrderDetail, InvoiceDetail, ProjectDetail, PurchaseOrderDetail } from "@/pages/document-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function AdminRouter() {
@@ -37,6 +37,7 @@ function AdminRouter() {
       <Route path="/invoices/:id" component={InvoiceDetail} />
       <Route path="/purchase-orders" component={PurchaseOrdersList} />
       <Route path="/purchase-orders/new" component={CreatePurchaseOrder} />
+      <Route path="/purchase-orders/:id" component={PurchaseOrderDetail} />
       <Route path="/search" component={SearchPage} />
       <Route path="/users" component={UsersPage} />
       <Route path="/project/:projectNumber" component={ProjectDetail} />

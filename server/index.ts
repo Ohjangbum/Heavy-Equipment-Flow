@@ -2,6 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { db } from "./db";
+import { users } from "@shared/models/auth";
+import { eq } from "drizzle-orm";
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +63,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    const [firstUser] = await db.select().from(users).where(eq(users.employeeId, "1001")).limit(1);
+    if (firstUser && firstUser.role !== "admin") {
+      await db.update(users).set({ role: "admin" }).where(eq(users.id, firstUser.id));
+      log(`Auto-promoted first user (${firstUser.email}) to admin`);
+    }
+  } catch (e) {}
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

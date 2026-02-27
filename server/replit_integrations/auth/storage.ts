@@ -37,11 +37,14 @@ class AuthStorage implements IAuthStorage {
     }
 
     const employeeId = await this.getNextEmployeeId();
+    const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
+    const isFirstUser = (countResult?.count || 0) === 0;
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
         employeeId,
+        role: isFirstUser ? "admin" : "technician",
         displayName: [userData.firstName, userData.lastName].filter(Boolean).join(" ") || null,
       })
       .returning();

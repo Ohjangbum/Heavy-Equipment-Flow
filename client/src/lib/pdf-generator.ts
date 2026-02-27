@@ -1,13 +1,6 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { COMPANY, BANK_ACCOUNTS, formatNumber } from "./constants";
-
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
 
 function addHeader(doc: jsPDF, title: string, docNumber: string) {
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -73,6 +66,10 @@ function addBankAndSignature(doc: jsPDF, bankChoice: string, startY: number) {
   doc.text(COMPANY.directorTitle, sigX, startY + 50, { align: "center" });
 }
 
+function getFinalY(doc: jsPDF): number {
+  return (doc as any).lastAutoTable?.finalY || 60;
+}
+
 export function generateQuotationPDF(data: any) {
   const doc = new jsPDF();
   let y = addHeader(doc, "QUOTATION", "");
@@ -129,7 +126,7 @@ export function generateQuotationPDF(data: any) {
     });
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [["NO", "URAIAN", "VOL", "STN", "HARGA SATUAN", "JUMLAH", "KET"]],
     body: allRows,
@@ -148,9 +145,9 @@ export function generateQuotationPDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY + 2;
+  y = getFinalY(doc) + 2;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: [
       ["", "", "", "", { content: "SUBTOTAL", styles: { fontStyle: "bold", halign: "right" } }, { content: `Rp ${formatNumber(data.subtotal)}`, styles: { halign: "right" } }, ""],
@@ -170,7 +167,7 @@ export function generateQuotationPDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY;
+  y = getFinalY(doc);
   addBankAndSignature(doc, data.bankChoice, y);
 
   doc.save(`Quotation_QUO_${data.projectNumber}.pdf`);
@@ -221,7 +218,7 @@ export function generateInvoicePDF(data: any) {
     });
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [["NO", "URAIAN", "VOL", "STN", "HARGA SATUAN", "JUMLAH", "KET"]],
     body: allRows,
@@ -240,9 +237,9 @@ export function generateInvoicePDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY + 2;
+  y = getFinalY(doc) + 2;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: [
       ["", "", "", "", { content: "SUBTOTAL", styles: { fontStyle: "bold", halign: "right" } }, { content: `Rp ${formatNumber(data.subtotal)}`, styles: { halign: "right" } }, ""],
@@ -263,7 +260,7 @@ export function generateInvoicePDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY;
+  y = getFinalY(doc);
   addBankAndSignature(doc, data.bankChoice, y);
 
   doc.save(`Invoice_INV_${data.projectNumber}.pdf`);
@@ -295,7 +292,7 @@ export function generateWorkOrderPDF(data: any) {
     [`Hours Meter :  ${data.hoursMeter || ""}`, "", ""],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: infoTable,
     theme: "grid",
@@ -308,7 +305,7 @@ export function generateWorkOrderPDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY + 8;
+  y = getFinalY(doc) + 8;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -333,7 +330,7 @@ export function generateWorkOrderPDF(data: any) {
   doc.text("Biaya", pageWidth - 30, y, { align: "right" });
   y += 4;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: costRows,
     theme: "grid",
@@ -346,14 +343,14 @@ export function generateWorkOrderPDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  y = getFinalY(doc) + 10;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("Tanda Tangan", pageWidth / 2, y, { align: "center" });
   y += 5;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: [
       [
@@ -370,14 +367,14 @@ export function generateWorkOrderPDF(data: any) {
     margin: { left: 14, right: 14 },
   });
 
-  y = doc.lastAutoTable.finalY + 8;
+  y = getFinalY(doc) + 8;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("Status Job", pageWidth / 2, y, { align: "center" });
   y += 5;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: [[
       { content: "Open", styles: { halign: "center", fontStyle: data.status === "assigned" ? "bold" : "normal" } },

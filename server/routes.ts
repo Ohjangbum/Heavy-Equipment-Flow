@@ -244,8 +244,9 @@ export async function registerRoutes(
       }
 
       const items = await storage.getWoItems(wo.id);
+      const expenditures = await storage.getTechExpenditures(wo.id);
       const client = await storage.getClient(wo.clientId);
-      res.json({ ...wo, items, client });
+      res.json({ ...wo, items, expenditures, client });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch work order" });
     }
@@ -313,10 +314,26 @@ export async function registerRoutes(
       if (wo.assignedToId !== userId) {
         return res.status(403).json({ message: "Not assigned to you" });
       }
-      const { technicianCost } = req.body;
+      const { expenditures } = req.body;
+      let totalCost = 0;
+
+      if (Array.isArray(expenditures) && expenditures.length > 0) {
+        await storage.deleteTechExpenditures(wo.id);
+        for (const item of expenditures) {
+          if (item.description && item.amount >= 0) {
+            await storage.createTechExpenditure({
+              workOrderId: wo.id,
+              description: item.description,
+              amount: item.amount || 0,
+            });
+            totalCost += item.amount || 0;
+          }
+        }
+      }
+
       const updated = await storage.updateWorkOrder(wo.id, {
         status: "completed",
-        technicianCost: technicianCost || 0,
+        technicianCost: totalCost,
       });
       res.json(updated);
     } catch (error) {

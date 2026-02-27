@@ -19,7 +19,7 @@ Heavy equipment workshop document management web app for CV UTAMA SINERGI BERKAR
 ## Key Files
 - `shared/schema.ts` - Re-exports from models
 - `shared/models/auth.ts` - Users and sessions tables
-- `shared/models/documents.ts` - All document tables (clients, quotations, quotation_items, purchase_orders, work_orders, wo_items, invoices, invoice_items)
+- `shared/models/documents.ts` - All document tables (clients, quotations, quotation_items, purchase_orders, work_orders, wo_items, tech_expenditures, invoices, invoice_items)
 - `server/routes.ts` - All API endpoints
 - `server/storage.ts` - Database storage interface and implementation
 - `client/src/App.tsx` - Frontend routing (admin vs technician views)
@@ -33,7 +33,7 @@ Heavy equipment workshop document management web app for CV UTAMA SINERGI BERKAR
 2. Client sends Purchase Order → admin inputs it linked to project number
 3. Admin creates Work Order → linked to same project number (WO/10000)
 4. Technician accepts WO → status: processing
-5. Technician completes WO → inputs actual cost → status: completed
+5. Technician completes WO → adds expenditure rows (description + cost, auto-totaled) → status: completed
 6. Admin creates Invoice → linked to same project number (INV/10000)
 
 ## Profit/Loss Calculation

@@ -13,6 +13,8 @@ import {
   type InsertWorkOrder,
   type WoItem,
   type InsertWoItem,
+  type TechExpenditure,
+  type InsertTechExpenditure,
   type Invoice,
   type InsertInvoice,
   type InvoiceItem,
@@ -24,6 +26,7 @@ import {
   purchaseOrders,
   workOrders,
   woItems,
+  techExpenditures,
   invoices,
   invoiceItems,
 } from "@shared/schema";
@@ -69,6 +72,10 @@ export interface IStorage {
   getWoItems(workOrderId: number): Promise<WoItem[]>;
   createWoItem(item: InsertWoItem): Promise<WoItem>;
   deleteWoItems(workOrderId: number): Promise<void>;
+
+  getTechExpenditures(workOrderId: number): Promise<TechExpenditure[]>;
+  createTechExpenditure(item: InsertTechExpenditure): Promise<TechExpenditure>;
+  deleteTechExpenditures(workOrderId: number): Promise<void>;
 
   getInvoices(): Promise<Invoice[]>;
   getInvoice(id: number): Promise<Invoice | undefined>;
@@ -235,6 +242,19 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWoItems(workOrderId: number): Promise<void> {
     await db.delete(woItems).where(eq(woItems.workOrderId, workOrderId));
+  }
+
+  async getTechExpenditures(workOrderId: number): Promise<TechExpenditure[]> {
+    return db.select().from(techExpenditures).where(eq(techExpenditures.workOrderId, workOrderId));
+  }
+
+  async createTechExpenditure(item: InsertTechExpenditure): Promise<TechExpenditure> {
+    const [created] = await db.insert(techExpenditures).values(item).returning();
+    return created;
+  }
+
+  async deleteTechExpenditures(workOrderId: number): Promise<void> {
+    await db.delete(techExpenditures).where(eq(techExpenditures.workOrderId, workOrderId));
   }
 
   async getInvoices(): Promise<Invoice[]> {

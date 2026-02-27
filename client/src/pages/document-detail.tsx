@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Download, Check, Play, FileIcon, ExternalLink } from "lucide-react";
+import { ArrowLeft, Download, Check, Play, FileIcon, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { formatCurrency, WO_STATUS_MAP } from "@/lib/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -139,13 +139,19 @@ export function QuotationDetail() {
   );
 }
 
+interface ExpRow {
+  description: string;
+  amount: number;
+}
+
 export function WorkOrderDetail() {
   const [, params] = useRoute("/work-orders/:id");
   const { user } = useAuth();
   const { toast } = useToast();
-  const [techCost, setTechCost] = useState("");
+  const [expRows, setExpRows] = useState<ExpRow[]>([{ description: "", amount: 0 }]);
   const isAdmin = (user as any)?.role === "admin";
   const isTechnician = (user as any)?.role === "technician";
+  const expTotal = expRows.reduce((sum, r) => sum + r.amount, 0);
 
   const { data, isLoading } = useQuery<any>({
     queryKey: ["/api/work-orders", params?.id],
@@ -167,8 +173,9 @@ export function WorkOrderDetail() {
 
   const completeMut = useMutation({
     mutationFn: async () => {
+      const validRows = expRows.filter(r => r.description.trim());
       const res = await apiRequest("PATCH", `/api/work-orders/${params?.id}/complete`, {
-        technicianCost: parseInt(techCost) || 0,
+        expenditures: validRows,
       });
       return res.json();
     },
@@ -248,7 +255,35 @@ export function WorkOrderDetail() {
         </Card>
       )}
 
-      {data.technicianCost > 0 && (
+      {data.expenditures && data.expenditures.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Actual Expenditure</CardTitle></CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-2">Description</th>
+                  <th className="text-right py-2 px-2">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.expenditures.map((exp: any) => (
+                  <tr key={exp.id} className="border-b last:border-0">
+                    <td className="py-2 px-2">{exp.description}</td>
+                    <td className="py-2 px-2 text-right">{formatCurrency(exp.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="font-bold">
+                  <td className="py-2 px-2">TOTAL</td>
+                  <td className="py-2 px-2 text-right" data-testid="text-exp-total">{formatCurrency(data.technicianCost)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.technicianCost > 0 && (!data.expenditures || data.expenditures.length === 0) && (
         <Card>
           <CardContent className="p-6">
             <div className="flex justify-between items-center">
@@ -272,18 +307,64 @@ export function WorkOrderDetail() {
 
       {canComplete && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Complete Work Order</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Total Actual Expenditure (Rp)</Label>
-              <Input
-                type="number"
-                value={techCost}
-                onChange={(e) => setTechCost(e.target.value)}
-                placeholder="Enter total actual cost"
-                data-testid="input-tech-cost"
-              />
+          <CardHeader className="flex flex-row items-center justify-between gap-1">
+            <CardTitle className="text-base">Actual Expenditure</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setExpRows([...expRows, { description: "", amount: 0 }])} data-testid="button-add-exp">
+              <Plus className="w-4 h-4 mr-1" /> Add Row
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {expRows.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                <div className="col-span-8">
+                  <Label className="text-xs">Description</Label>
+                  <Input
+                    value={row.description}
+                    onChange={(e) => {
+                      const updated = [...expRows];
+                      updated[idx].description = e.target.value;
+                      setExpRows(updated);
+                    }}
+                    placeholder="e.g. BBM, Makan, Spare Part"
+                    data-testid={`input-exp-desc-${idx}`}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Label className="text-xs">Amount (Rp)</Label>
+                  <Input
+                    type="number"
+                    value={row.amount}
+                    onChange={(e) => {
+                      const updated = [...expRows];
+                      updated[idx].amount = parseInt(e.target.value) || 0;
+                      setExpRows(updated);
+                    }}
+                    data-testid={`input-exp-amount-${idx}`}
+                  />
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (expRows.length <= 1) return;
+                      setExpRows(expRows.filter((_, i) => i !== idx));
+                    }}
+                    disabled={expRows.length <= 1}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-end pt-3 border-t">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Total Expenditure</p>
+                <p className="text-xl font-bold" data-testid="text-exp-total-form">Rp {expTotal.toLocaleString("id-ID")}</p>
+              </div>
             </div>
+
             <Button onClick={() => completeMut.mutate()} disabled={completeMut.isPending} data-testid="button-complete-wo">
               <Check className="w-4 h-4 mr-2" />
               {completeMut.isPending ? "Completing..." : "Mark as Done"}

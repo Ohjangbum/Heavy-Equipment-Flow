@@ -75,6 +75,13 @@ export const woItems = pgTable("wo_items", {
   amount: integer("amount").notNull().default(0),
 });
 
+export const techExpenditures = pgTable("tech_expenditures", {
+  id: serial("id").primaryKey(),
+  workOrderId: integer("work_order_id").notNull(),
+  description: text("description").notNull(),
+  amount: integer("amount").notNull().default(0),
+});
+
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
   projectNumber: integer("project_number").notNull().unique(),
@@ -123,10 +130,15 @@ export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
 export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
   client: one(clients, { fields: [workOrders.clientId], references: [clients.id] }),
   items: many(woItems),
+  expenditures: many(techExpenditures),
 }));
 
 export const woItemsRelations = relations(woItems, ({ one }) => ({
   workOrder: one(workOrders, { fields: [woItems.workOrderId], references: [workOrders.id] }),
+}));
+
+export const techExpendituresRelations = relations(techExpenditures, ({ one }) => ({
+  workOrder: one(workOrders, { fields: [techExpenditures.workOrderId], references: [workOrders.id] }),
 }));
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
@@ -144,6 +156,7 @@ export const insertQuotationItemSchema = createInsertSchema(quotationItems).omit
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true });
 export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({ id: true, createdAt: true });
 export const insertWoItemSchema = createInsertSchema(woItems).omit({ id: true });
+export const insertTechExpenditureSchema = createInsertSchema(techExpenditures).omit({ id: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
 
@@ -159,6 +172,8 @@ export type WorkOrder = typeof workOrders.$inferSelect;
 export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
 export type WoItem = typeof woItems.$inferSelect;
 export type InsertWoItem = z.infer<typeof insertWoItemSchema>;
+export type TechExpenditure = typeof techExpenditures.$inferSelect;
+export type InsertTechExpenditure = z.infer<typeof insertTechExpenditureSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;

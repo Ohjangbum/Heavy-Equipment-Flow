@@ -44,6 +44,20 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/users/me/display-name", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { displayName } = req.body;
+      if (!displayName || typeof displayName !== "string" || displayName.trim().length === 0) {
+        return res.status(400).json({ message: "Display name is required" });
+      }
+      const updated = await storage.updateUserDisplayName(userId, displayName.trim());
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update display name" });
+    }
+  });
+
   app.get("/api/clients", isAuthenticated, async (_req, res) => {
     try {
       const allClients = await storage.getClients();

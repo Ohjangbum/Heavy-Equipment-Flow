@@ -155,7 +155,7 @@ export default function CreateWorkOrder() {
                 <SelectContent>
                   {technicians.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {t.firstName || t.email || t.id}
+                      {(t as any).employeeId || "?"} - {(t as any).displayName || t.firstName || t.email || t.id}
                     </SelectItem>
                   ))}
                 </SelectContent>

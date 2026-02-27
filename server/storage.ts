@@ -33,6 +33,7 @@ import { eq, ilike, or, sql, desc, max } from "drizzle-orm";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
+  updateUserDisplayName(id: string, displayName: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
   getClients(): Promise<Client[]>;
@@ -97,7 +98,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserRole(id: string, role: string): Promise<User | undefined> {
-    const [user] = await db.update(users).set({ role }).where(eq(users.id, id)).returning();
+    const [user] = await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+    return user || undefined;
+  }
+
+  async updateUserDisplayName(id: string, displayName: string): Promise<User | undefined> {
+    const [user] = await db.update(users).set({ displayName, updatedAt: new Date() }).where(eq(users.id, id)).returning();
     return user || undefined;
   }
 

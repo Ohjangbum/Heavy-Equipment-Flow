@@ -5,65 +5,65 @@ import { COMPANY, BANK_ACCOUNTS, formatNumber } from "./constants";
 function addHeader(doc: jsPDF, title: string, docNumber: string) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.text(COMPANY.name, 14, 20);
 
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(COMPANY.address, 14, 26);
-  doc.text(COMPANY.district, 14, 31);
-  doc.text(`Email: ${COMPANY.email}`, 14, 36);
-  doc.text(COMPANY.npwp, 14, 41);
+  doc.text(COMPANY.address, 14, 27);
+  doc.text(COMPANY.district, 14, 33);
+  doc.text(`Email: ${COMPANY.email}`, 14, 39);
+  doc.text(COMPANY.npwp, 14, 45);
 
   doc.setLineWidth(0.5);
-  doc.line(14, 45, pageWidth - 14, 45);
+  doc.line(14, 49, pageWidth - 14, 49);
 
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text(title, pageWidth / 2, 55, { align: "center" });
+  doc.text(title, pageWidth / 2, 59, { align: "center" });
 
   if (docNumber) {
-    doc.setFontSize(10);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(docNumber, pageWidth - 14, 55, { align: "right" });
+    doc.text(docNumber, pageWidth - 14, 59, { align: "right" });
   }
 
-  return 60;
+  return 65;
 }
 
 function addBankAndSignature(doc: jsPDF, bankChoice: string, startY: number) {
   const bank = BANK_ACCOUNTS.find(b => b.id === bankChoice) || BANK_ACCOUNTS[0];
-  let y = startY + 10;
+  let y = startY + 12;
 
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("DETAIL PEMBAYARAN", 14, y);
-  y += 6;
+  y += 7;
 
   doc.setFont("helvetica", "normal");
   doc.text(`NAMA BANK:`, 14, y);
-  doc.text(bank.bankName, 55, y);
-  y += 5;
+  doc.text(bank.bankName, 60, y);
+  y += 6;
   doc.text(`CABANG BANK:`, 14, y);
-  doc.text(bank.branch, 55, y);
-  y += 5;
+  doc.text(bank.branch, 60, y);
+  y += 6;
   doc.text(`NOMOR AKUN BANK:`, 14, y);
-  doc.text(bank.accountNumber, 55, y);
-  y += 5;
+  doc.text(bank.accountNumber, 60, y);
+  y += 6;
   doc.text(`ATAS NAMA:`, 14, y);
-  doc.text(bank.accountHolder, 55, y);
+  doc.text(bank.accountHolder, 60, y);
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const sigX = pageWidth - 60;
 
   doc.setFont("helvetica", "normal");
-  doc.text(COMPANY.name, sigX, startY + 16, { align: "center" });
+  doc.text(COMPANY.name, sigX, startY + 18, { align: "center" });
 
   doc.setFont("helvetica", "bold");
-  doc.text(COMPANY.director, sigX, startY + 45, { align: "center" });
+  doc.text(COMPANY.director, sigX, startY + 50, { align: "center" });
   doc.setFont("helvetica", "normal");
-  doc.text(COMPANY.directorTitle, sigX, startY + 50, { align: "center" });
+  doc.text(COMPANY.directorTitle, sigX, startY + 56, { align: "center" });
 }
 
 function getFinalY(doc: jsPDF): number {
@@ -74,21 +74,21 @@ export function generateQuotationPDF(data: any) {
   const doc = new jsPDF();
   let y = addHeader(doc, "QUOTATION", "");
 
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(`No Quotation     : ${data.projectNumber}`, 14, y + 5);
-  doc.text(`Tanggal          : ${data.date}`, 14, y + 11);
-  doc.text(`Kepada           : ${data.client?.name || ""}`, 14, y + 17);
+  doc.text(`No Quotation     : ${data.projectNumber}`, 14, y + 6);
+  doc.text(`Tanggal          : ${data.date}`, 14, y + 13);
+  doc.text(`Kepada           : ${data.client?.name || ""}`, 14, y + 20);
 
-  y += 24;
+  y += 28;
 
   if (data.equipmentDescription) {
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.text(
       `Berikut Penawaran Material dan Jasa Perbaikan ${data.equipmentDescription} dengan rincian sebagai berikut :`,
-      14, y
+      14, y, { maxWidth: 180 }
     );
-    y += 8;
+    y += 10;
   }
 
   const materialItems = data.items?.filter((i: any) => i.category === "material") || [];
@@ -131,7 +131,7 @@ export function generateQuotationPDF(data: any) {
     head: [["NO", "URAIAN", "VOL", "STN", "HARGA SATUAN", "JUMLAH", "KET"]],
     body: allRows,
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 2 },
+    styles: { fontSize: 10, cellPadding: 3 },
     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", halign: "center" },
     columnStyles: {
       0: { halign: "center", cellWidth: 10 },
@@ -154,7 +154,7 @@ export function generateQuotationPDF(data: any) {
       ["", "", "", "", { content: "TOTAL", styles: { fontStyle: "bold", halign: "right" } }, { content: `Rp ${formatNumber(data.total)}`, styles: { fontStyle: "bold", halign: "right" } }, ""],
     ],
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 2 },
+    styles: { fontSize: 10, cellPadding: 3 },
     columnStyles: {
       0: { cellWidth: 10 },
       1: { cellWidth: 50 },
@@ -177,22 +177,22 @@ export function generateInvoicePDF(data: any) {
   const doc = new jsPDF();
   let y = addHeader(doc, "INVOICE", "");
 
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(`Nomor Invoice : ${data.projectNumber}`, 14, y + 5);
-  doc.text(`Tanggal       : ${data.date}`, 14, y + 11);
-  doc.text(`Kepada         : ${data.client?.name || ""}`, 14, y + 17);
+  doc.text(`Nomor Invoice : ${data.projectNumber}`, 14, y + 6);
+  doc.text(`Tanggal       : ${data.date}`, 14, y + 13);
+  doc.text(`Kepada         : ${data.client?.name || ""}`, 14, y + 20);
 
   if (data.poNumber) {
     const pageWidth = doc.internal.pageSize.getWidth();
-    doc.text(`NO PO ${data.poNumber}`, pageWidth - 14, y + 5, { align: "right" });
+    doc.text(`NO PO ${data.poNumber}`, pageWidth - 14, y + 6, { align: "right" });
   }
 
-  y += 24;
+  y += 28;
 
-  doc.setFontSize(9);
-  doc.text("Mohon dilakukan pembayaran Material dan Pekerjaan dengan rincian sebagai berikut :", 14, y);
-  y += 8;
+  doc.setFontSize(11);
+  doc.text("Mohon dilakukan pembayaran Material dan Pekerjaan dengan rincian sebagai berikut :", 14, y, { maxWidth: 180 });
+  y += 10;
 
   const allRows: any[] = [];
   const materialItems = data.items?.filter((i: any) => i.category === "material") || [];
@@ -223,7 +223,7 @@ export function generateInvoicePDF(data: any) {
     head: [["NO", "URAIAN", "VOL", "STN", "HARGA SATUAN", "JUMLAH", "KET"]],
     body: allRows,
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 2 },
+    styles: { fontSize: 10, cellPadding: 3 },
     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", halign: "center" },
     columnStyles: {
       0: { halign: "center", cellWidth: 10 },
@@ -247,7 +247,7 @@ export function generateInvoicePDF(data: any) {
       ["", "", "", "", { content: "TOTAL", styles: { fontStyle: "bold", halign: "right" } }, { content: `Rp ${formatNumber(data.total)}`, styles: { fontStyle: "bold", halign: "right" } }, ""],
     ],
     theme: "grid",
-    styles: { fontSize: 8, cellPadding: 2 },
+    styles: { fontSize: 10, cellPadding: 3 },
     columnStyles: {
       0: { cellWidth: 10 },
       1: { cellWidth: 50 },
@@ -324,17 +324,13 @@ export function generateWorkOrderPDF(data: any) {
     { content: formatNumber(data.totalBudget), styles: { fontStyle: "bold", halign: "right" } },
   ]);
 
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text("Kebutuhan Material", 14, y);
-  doc.text("Biaya", pageWidth - 30, y, { align: "right" });
-  y += 4;
-
   autoTable(doc, {
     startY: y,
+    head: [["Kebutuhan Material", "", "Biaya"]],
     body: costRows,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold" },
     columnStyles: {
       0: { cellWidth: 100 },
       1: { cellWidth: 15, halign: "left" },

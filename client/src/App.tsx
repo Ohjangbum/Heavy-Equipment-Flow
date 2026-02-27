@@ -19,6 +19,7 @@ import PurchaseOrdersList from "@/pages/purchase-orders";
 import CreatePurchaseOrder from "@/pages/create-purchase-order";
 import SearchPage from "@/pages/search";
 import UsersPage from "@/pages/users";
+import ProfilePage from "@/pages/profile";
 import { QuotationDetail, WorkOrderDetail, InvoiceDetail, ProjectDetail, PurchaseOrderDetail } from "@/pages/document-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,6 +41,7 @@ function AdminRouter() {
       <Route path="/purchase-orders/:id" component={PurchaseOrderDetail} />
       <Route path="/search" component={SearchPage} />
       <Route path="/users" component={UsersPage} />
+      <Route path="/profile" component={ProfilePage} />
       <Route path="/project/:projectNumber" component={ProjectDetail} />
       <Route component={NotFound} />
     </Switch>
@@ -51,6 +53,7 @@ function TechnicianRouter() {
     <Switch>
       <Route path="/" component={WorkOrders} />
       <Route path="/work-orders/:id" component={WorkOrderDetail} />
+      <Route path="/profile" component={ProfilePage} />
       <Route component={NotFound} />
     </Switch>
   );

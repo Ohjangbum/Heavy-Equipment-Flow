@@ -1,9 +1,7 @@
 import { users, type User, type UpsertUser } from "@shared/models/auth";
 import { db } from "../../db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
-// Interface for auth storage operations
-// (IMPORTANT) These user operations are mandatory for Replit Auth.
 export interface IAuthStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
@@ -15,16 +13,36 @@ class AuthStorage implements IAuthStorage {
     return user;
   }
 
+  private async getNextEmployeeId(): Promise<string> {
+    const [result] = await db.select({ maxId: sql<number>`COALESCE(MAX(CAST(employee_id AS INTEGER)), 1000)` }).from(users);
+    return String((result?.maxId || 1000) + 1);
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const existing = await this.getUser(userData.id!);
+
+    if (existing) {
+      const [user] = await db
+        .update(users)
+        .set({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userData.id!))
+        .returning();
+      return user;
+    }
+
+    const employeeId = await this.getNextEmployeeId();
     const [user] = await db
       .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
+      .values({
+        ...userData,
+        employeeId,
+        displayName: [userData.firstName, userData.lastName].filter(Boolean).join(" ") || null,
       })
       .returning();
     return user;

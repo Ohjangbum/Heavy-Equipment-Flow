@@ -38,6 +38,7 @@ const adminItems = [
 
 const technicianItems = [
   { title: "My Work Orders", url: "/", icon: Wrench },
+  { title: "My Profile", url: "/profile", icon: Users },
 ];
 
 export function AppSidebar() {
@@ -100,10 +101,10 @@ export function AppSidebar() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {(user as any).firstName || "User"}
+              {(user as any).displayName || (user as any).firstName || "User"}
             </p>
             <p className="text-xs text-muted-foreground truncate capitalize">
-              {(user as any).role || "technician"}
+              {(user as any).employeeId ? `#${(user as any).employeeId} · ` : ""}{(user as any).role || "technician"}
             </p>
           </div>
           <a href="/api/logout" data-testid="button-logout">

@@ -7,8 +7,14 @@ Heavy equipment workshop document management web app for CV UTAMA SINERGI BERKAR
 - Full-stack TypeScript app: Express backend + React (Vite) frontend
 - PostgreSQL database with Drizzle ORM
 - Replit Auth for authentication (admin/technician roles)
-- Object Storage integration (for future file uploads)
+- Object Storage integration (PO file uploads)
 - PDF generation via jsPDF + jspdf-autotable (client-side)
+
+## User System
+- Users get auto-generated 4-digit employee IDs (starting from 1001)
+- Users can set their display name via Profile page (`/profile`)
+- Admin selects technicians by employee ID + name in WO form
+- Employee ID is assigned on first login and cannot be changed
 
 ## Key Files
 - `shared/schema.ts` - Re-exports from models

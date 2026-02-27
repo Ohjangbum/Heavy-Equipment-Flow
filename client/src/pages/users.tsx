@@ -58,7 +58,10 @@ export default function UsersPage() {
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{u.firstName} {u.lastName}</p>
+                      <p className="font-medium">
+                        {(u as any).employeeId && <span className="text-muted-foreground font-mono mr-2">#{(u as any).employeeId}</span>}
+                        {(u as any).displayName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "User"}
+                      </p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
                     </div>
                   </div>

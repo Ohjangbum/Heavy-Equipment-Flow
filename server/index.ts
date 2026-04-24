@@ -1,9 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
+import { registerRoutes } from "./routes.js";
+import { serveStatic } from "./static.js";
 import { createServer } from "http";
-import { db } from "./db";
-import { users } from "../shared/models/auth";
+import { db } from "./db.js";
+import { users } from "../shared/models/auth.js";
 import { eq } from "drizzle-orm";
 
 const app = express();
@@ -114,7 +114,7 @@ app.use(async (req, res, next) => {
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
-      const { setupVite } = await import("./vite");
+      const { setupVite } = await import("./vite.js");
       await setupVite(httpServer, app);
     }
 

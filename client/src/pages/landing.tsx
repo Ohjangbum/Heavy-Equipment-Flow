@@ -1,8 +1,70 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, FileText, BarChart3, Smartphone } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Wrench, FileText, BarChart3, Smartphone, Loader2 } from "lucide-react";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Landing() {
+  const navigate = useLocation()[1];
+  const { login, register, isLoggingIn, isRegistering, loginError, registerError } = useAuth();
+  const [activeTab, setActiveTab] = useState("login");
+
+  const loginForm = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+    },
+  });
+
+  const handleLogin = async (data: LoginForm) => {
+    login(data, {
+      onSuccess: () => {
+        navigate("/");
+      },
+    });
+  };
+
+  const handleRegister = async (data: RegisterForm) => {
+    register(data, {
+      onSuccess: () => {
+        navigate("/");
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b">
@@ -13,9 +75,12 @@ export default function Landing() {
             </div>
             <span className="font-semibold text-lg">Workshop Manager</span>
           </div>
-          <a href="/api/login">
-            <Button data-testid="button-login">Sign In</Button>
-          </a>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="login">Sign In</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </nav>
 
@@ -30,11 +95,9 @@ export default function Landing() {
               with professional templates. Track projects from start to finish, all from your phone.
             </p>
             <div className="flex flex-wrap gap-3">
-              <a href="/api/login">
-                <Button size="lg" data-testid="button-get-started">
-                  Get Started
-                </Button>
-              </a>
+              <Button size="lg" onClick={() => setActiveTab("register")} data-testid="button-get-started">
+                Get Started
+              </Button>
             </div>
             <div className="flex flex-wrap items-center gap-4 mt-6 text-sm text-muted-foreground">
               <span>Free to use</span>
@@ -45,38 +108,122 @@ export default function Landing() {
             </div>
           </div>
           <div className="hidden lg:block">
-            <div className="bg-card rounded-lg border p-8 space-y-4">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold">QUO/10001</p>
-                  <p className="text-sm text-muted-foreground">PT ABAD JAYA</p>
-                </div>
-                <span className="ml-auto text-sm px-2 py-1 rounded-md bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  Completed
-                </span>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">Quote Amount</span>
-                  <span className="font-medium">Rp 27,850,000</span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">WO Budget</span>
-                  <span className="font-medium">Rp 3,000,000</span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">Technician Cost</span>
-                  <span className="font-medium">Rp 2,500,000</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="font-semibold">Profit</span>
-                  <span className="font-bold text-green-600">Rp 22,350,000</span>
-                </div>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Sign In to Your Account</CardTitle>
+                <CardDescription>Enter your credentials to access the system</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="w-full mb-4">
+                    <TabsTrigger value="login" className="flex-1">Sign In</TabsTrigger>
+                    <TabsTrigger value="register" className="flex-1">Register</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="login">
+                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">Email</Label>
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="you@example.com"
+                          {...loginForm.register("email")}
+                        />
+                        {loginForm.formState.errors.email && (
+                          <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="login-password">Password</Label>
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="Enter your password"
+                          {...loginForm.register("password")}
+                        />
+                        {loginForm.formState.errors.password && (
+                          <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
+                        )}
+                      </div>
+                      {loginError && (
+                        <p className="text-sm text-red-500">{loginError.message}</p>
+                      )}
+                      <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                        {isLoggingIn ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Signing in...
+                          </>
+                        ) : (
+                          "Sign In"
+                        )}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                  <TabsContent value="register">
+                    <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="register-firstName">First Name</Label>
+                          <Input
+                            id="register-firstName"
+                            type="text"
+                            placeholder="John"
+                            {...registerForm.register("firstName")}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="register-lastName">Last Name</Label>
+                          <Input
+                            id="register-lastName"
+                            type="text"
+                            placeholder="Doe"
+                            {...registerForm.register("lastName")}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email">Email</Label>
+                        <Input
+                          id="register-email"
+                          type="email"
+                          placeholder="you@example.com"
+                          {...registerForm.register("email")}
+                        />
+                        {registerForm.formState.errors.email && (
+                          <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Password</Label>
+                        <Input
+                          id="register-password"
+                          type="password"
+                          placeholder="At least 6 characters"
+                          {...registerForm.register("password")}
+                        />
+                        {registerForm.formState.errors.password && (
+                          <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                        )}
+                      </div>
+                      {registerError && (
+                        <p className="text-sm text-red-500">{registerError.message}</p>
+                      )}
+                      <Button type="submit" className="w-full" disabled={isRegistering}>
+                        {isRegistering ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          "Create Account"
+                        )}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 export async function registerRoutes(
@@ -14,7 +14,7 @@ export async function registerRoutes(
 
   app.get("/api/users", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -28,7 +28,7 @@ export async function registerRoutes(
 
   app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -46,7 +46,7 @@ export async function registerRoutes(
 
   app.patch("/api/users/me/display-name", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { displayName } = req.body;
       if (!displayName || typeof displayName !== "string" || displayName.trim().length === 0) {
         return res.status(400).json({ message: "Display name is required" });
@@ -106,7 +106,7 @@ export async function registerRoutes(
 
   app.get("/api/quotations/:id", isAuthenticated, async (req, res) => {
     try {
-      const quot = await storage.getQuotation(parseInt(req.params.id));
+      const quot = await storage.getQuotation(parseInt(req.params.id as string));
       if (!quot) return res.status(404).json({ message: "Not found" });
       const items = await storage.getQuotationItems(quot.id);
       const client = await storage.getClient(quot.clientId);
@@ -118,7 +118,7 @@ export async function registerRoutes(
 
   app.get("/api/quotations/project/:projectNumber", isAuthenticated, async (req, res) => {
     try {
-      const quot = await storage.getQuotationByProject(parseInt(req.params.projectNumber));
+      const quot = await storage.getQuotationByProject(parseInt(req.params.projectNumber as string));
       if (!quot) return res.status(404).json({ message: "Not found" });
       const items = await storage.getQuotationItems(quot.id);
       const client = await storage.getClient(quot.clientId);
@@ -130,7 +130,7 @@ export async function registerRoutes(
 
   app.post("/api/quotations", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Only admin can create quotations" });
@@ -157,7 +157,7 @@ export async function registerRoutes(
 
   app.delete("/api/quotations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -180,7 +180,7 @@ export async function registerRoutes(
 
   app.get("/api/purchase-orders/project/:projectNumber", isAuthenticated, async (req, res) => {
     try {
-      const po = await storage.getPOByProject(parseInt(req.params.projectNumber));
+      const po = await storage.getPOByProject(parseInt(req.params.projectNumber as string));
       if (!po) return res.status(404).json({ message: "Not found" });
       const client = await storage.getClient(po.clientId);
       res.json({ ...po, client });
@@ -191,7 +191,7 @@ export async function registerRoutes(
 
   app.get("/api/purchase-orders/:id", isAuthenticated, async (req, res) => {
     try {
-      const po = await storage.getPurchaseOrder(parseInt(req.params.id));
+      const po = await storage.getPurchaseOrder(parseInt(req.params.id as string));
       if (!po) return res.status(404).json({ message: "Not found" });
       const client = await storage.getClient(po.clientId);
       res.json({ ...po, client });
@@ -202,7 +202,7 @@ export async function registerRoutes(
 
   app.post("/api/purchase-orders", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -216,7 +216,7 @@ export async function registerRoutes(
 
   app.get("/api/work-orders", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user) return res.status(401).json({ message: "Unauthorized" });
 
@@ -237,7 +237,7 @@ export async function registerRoutes(
       const wo = await storage.getWorkOrder(parseInt(req.params.id));
       if (!wo) return res.status(404).json({ message: "Not found" });
 
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (user?.role === "technician" && wo.assignedToId !== userId) {
         return res.status(403).json({ message: "Not assigned to you" });
@@ -254,7 +254,7 @@ export async function registerRoutes(
 
   app.get("/api/work-orders/project/:projectNumber", isAuthenticated, async (req, res) => {
     try {
-      const wo = await storage.getWOByProject(parseInt(req.params.projectNumber));
+      const wo = await storage.getWOByProject(parseInt(req.params.projectNumber as string));
       if (!wo) return res.status(404).json({ message: "Not found" });
       const items = await storage.getWoItems(wo.id);
       const client = await storage.getClient(wo.clientId);
@@ -266,7 +266,7 @@ export async function registerRoutes(
 
   app.post("/api/work-orders", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -293,7 +293,7 @@ export async function registerRoutes(
 
   app.patch("/api/work-orders/:id/accept", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const wo = await storage.getWorkOrder(parseInt(req.params.id));
       if (!wo) return res.status(404).json({ message: "Not found" });
       if (wo.assignedToId !== userId) {
@@ -308,7 +308,7 @@ export async function registerRoutes(
 
   app.patch("/api/work-orders/:id/complete", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const wo = await storage.getWorkOrder(parseInt(req.params.id));
       if (!wo) return res.status(404).json({ message: "Not found" });
       if (wo.assignedToId !== userId) {
@@ -343,7 +343,7 @@ export async function registerRoutes(
 
   app.patch("/api/work-orders/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -366,7 +366,7 @@ export async function registerRoutes(
 
   app.get("/api/invoices/:id", isAuthenticated, async (req, res) => {
     try {
-      const inv = await storage.getInvoice(parseInt(req.params.id));
+      const inv = await storage.getInvoice(parseInt(req.params.id as string));
       if (!inv) return res.status(404).json({ message: "Not found" });
       const items = await storage.getInvoiceItems(inv.id);
       const client = await storage.getClient(inv.clientId);
@@ -378,7 +378,7 @@ export async function registerRoutes(
 
   app.post("/api/invoices", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -405,7 +405,7 @@ export async function registerRoutes(
 
   app.delete("/api/invoices/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -419,7 +419,7 @@ export async function registerRoutes(
 
   app.patch("/api/invoices/:id/mark-paid", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -434,7 +434,7 @@ export async function registerRoutes(
 
   app.get("/api/search", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -450,7 +450,7 @@ export async function registerRoutes(
 
   app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user || user.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
@@ -464,7 +464,7 @@ export async function registerRoutes(
 
   app.get("/api/project/:projectNumber", isAuthenticated, async (req, res) => {
     try {
-      const pn = parseInt(req.params.projectNumber);
+      const pn = parseInt(req.params.projectNumber as string);
       const quotation = await storage.getQuotationByProject(pn);
       const po = await storage.getPOByProject(pn);
       const wo = await storage.getWOByProject(pn);

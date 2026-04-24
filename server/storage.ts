@@ -29,7 +29,7 @@ import {
   techExpenditures,
   invoices,
   invoiceItems,
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, ilike, or, sql, desc, max } from "drizzle-orm";
 

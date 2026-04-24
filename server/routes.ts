@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { storage } from "./storage.js";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth.js";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage/index.js";
 
 export async function registerRoutes(
   httpServer: Server,

@@ -4,8 +4,8 @@ import session from "express-session";
 import { Strategy as LocalStrategy } from "passport-local";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
-import { db } from "./db";
-import { users, type User } from "../shared/models/auth";
+import { db } from "./db.js";
+import { users, type User } from "../shared/models/auth.js";
 import { eq, sql } from "drizzle-orm";
 
 const SALT_LENGTH = 32;

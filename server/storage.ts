@@ -29,8 +29,8 @@ import {
   techExpenditures,
   invoices,
   invoiceItems,
-} from "../shared/schema";
-import { db } from "./db";
+} from "../shared/schema.js";
+import { db } from "./db.js";
 import { eq, ilike, or, sql, desc, max } from "drizzle-orm";
 
 export interface IStorage {

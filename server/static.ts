@@ -4,25 +4,30 @@ import path from "path";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "dist", "public");
-  if (!fs.existsSync(distPath)) {
-    // try fallback for bundled version
-    const bundledPath = path.resolve(__dirname, "public");
-    if (fs.existsSync(bundledPath)) {
-      app.use(express.static(bundledPath));
-      app.get("*", (_req, res) => {
-        res.sendFile(path.resolve(bundledPath, "index.html"));
-      });
-      return;
-    }
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+  const bundledPath = path.resolve(__dirname, "public");
+
+  let publicPath = "";
+
+  if (fs.existsSync(distPath)) {
+    publicPath = distPath;
+  } else if (fs.existsSync(bundledPath)) {
+    publicPath = bundledPath;
   }
 
-  app.use(express.static(distPath));
+  if (!publicPath) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`Could not find static build directory in ${distPath} or ${bundledPath}`);
+    }
+    return;
+  }
 
-  // fall through to index.html if the file doesn't exist
-  app.get("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use(express.static(publicPath));
+
+  // Catch-all route for SPA, but avoid intercepting API calls
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.resolve(publicPath, "index.html"));
   });
 }

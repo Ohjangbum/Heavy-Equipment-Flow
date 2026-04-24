@@ -2,19 +2,14 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "server/index.ts": {
-      "runtime": "@vercel/node"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "server/index.ts"
+      "destination": "/api"
     },
     {
       "source": "/objects/(.*)",
-      "destination": "server/index.ts"
+      "destination": "/api"
     },
     {
       "source": "/((?!api|objects|.*\\.).*)",

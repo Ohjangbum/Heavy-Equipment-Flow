@@ -3,7 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { db } from "./db";
-import { users } from "@shared/models/auth";
+import { users } from "../shared/models/auth";
 import { eq } from "drizzle-orm";
 
 const app = express();

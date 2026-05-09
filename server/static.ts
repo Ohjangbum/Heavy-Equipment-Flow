@@ -4,7 +4,7 @@ import path from "path";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "dist", "public");
-  const bundledPath = path.resolve(__dirname, "public");
+  const bundledPath = path.resolve(import.meta.dirname, "public");
 
   let publicPath = "";
 
@@ -24,7 +24,7 @@ export function serveStatic(app: Express) {
   app.use(express.static(publicPath));
 
   // Catch-all route for SPA, but avoid intercepting API calls
-  app.get("*", (req, res, next) => {
+  app.get("/{*path}", (req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
     }

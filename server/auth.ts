@@ -112,6 +112,27 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
   res.status(401).json({ message: "Unauthorized" });
 };
 
+export const isMaster: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if ((req.user as any).role !== "master") {
+    return res.status(403).json({ message: "Only master account can perform this action" });
+  }
+  next();
+};
+
+export const isAdminOrMaster: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const role = (req.user as any).role;
+  if (role !== "admin" && role !== "master") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
 export function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSessionMiddleware());
@@ -120,9 +141,9 @@ export function setupAuth(app: Express) {
 }
 
 export function registerAuthRoutes(app: Express) {
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/users/create", isMaster, async (req, res) => {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, employeeId: reqEmployeeId, role } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
@@ -130,6 +151,10 @@ export function registerAuthRoutes(app: Express) {
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      if (role && !["admin", "technician"].includes(role)) {
+        return res.status(400).json({ message: "Role must be admin or technician" });
       }
 
       const [existing] = await db
@@ -141,14 +166,18 @@ export function registerAuthRoutes(app: Express) {
         return res.status(409).json({ message: "Email already registered" });
       }
 
+      const employeeId = reqEmployeeId || await getNextEmployeeId();
+
+      const [existingId] = await db
+        .select()
+        .from(users)
+        .where(eq(users.employeeId, employeeId));
+
+      if (existingId) {
+        return res.status(409).json({ message: `Employee ID ${employeeId} already used` });
+      }
+
       const hashedPassword = hashPassword(password);
-      const employeeId = await getNextEmployeeId();
-
-      const [countResult] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(users);
-      const isFirstUser = (countResult?.count || 0) === 0;
-
       const displayName = [firstName, lastName].filter(Boolean).join(" ") || null;
 
       const [newUser] = await db
@@ -160,20 +189,83 @@ export function registerAuthRoutes(app: Express) {
           lastName: lastName || null,
           displayName,
           employeeId,
-          role: isFirstUser ? "admin" : "technician",
+          role: role || "technician",
         })
         .returning();
 
-      req.login({ id: newUser.id }, (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Failed to login after registration" });
-        }
-        const { password: _, ...userWithoutPassword } = newUser;
-        return res.status(201).json(userWithoutPassword);
-      });
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
     } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Failed to register user" });
+      console.error("Create user error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.post("/api/users/create-bulk", isMaster, async (req, res) => {
+    try {
+      const { users: userList } = req.body;
+
+      if (!Array.isArray(userList) || userList.length === 0) {
+        return res.status(400).json({ message: "users array is required" });
+      }
+
+      const created: any[] = [];
+      const errors: any[] = [];
+
+      for (const u of userList) {
+        try {
+          const { email, password, firstName, lastName, employeeId, role } = u;
+
+          if (!email || !password) {
+            errors.push({ email, error: "Email and password required" });
+            continue;
+          }
+
+          if (password.length < 6) {
+            errors.push({ email, error: "Password must be at least 6 characters" });
+            continue;
+          }
+
+          const [existing] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+          if (existing) {
+            errors.push({ email, error: "Email already registered" });
+            continue;
+          }
+
+          const eid = employeeId || await getNextEmployeeId();
+          const [existingId] = await db.select().from(users).where(eq(users.employeeId, eid));
+          if (existingId) {
+            errors.push({ email, error: `Employee ID ${eid} already used` });
+            continue;
+          }
+
+          const hashedPassword = hashPassword(password);
+          const displayName = [firstName, lastName].filter(Boolean).join(" ") || null;
+
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: email.toLowerCase(),
+              password: hashedPassword,
+              firstName: firstName || null,
+              lastName: lastName || null,
+              displayName,
+              employeeId: eid,
+              role: role || "technician",
+            })
+            .returning();
+
+          const { password: _, ...userWithoutPassword } = newUser;
+          created.push(userWithoutPassword);
+        } catch (err: any) {
+          errors.push({ email: u.email, error: err.message });
+        }
+      }
+
+      res.json({ created, errors });
+    } catch (error) {
+      console.error("Bulk create error:", error);
+      res.status(500).json({ message: "Failed to create users" });
     }
   });
 

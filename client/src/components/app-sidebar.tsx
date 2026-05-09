@@ -48,7 +48,8 @@ export function AppSidebar() {
 
   if (!isAuthenticated || !user) return null;
 
-  const isAdmin = (user as any).role === "admin";
+  const role = (user as any).role;
+  const isAdmin = role === "admin" || role === "master";
   const items = isAdmin ? adminItems : technicianItems;
 
   const initials = [

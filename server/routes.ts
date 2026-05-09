@@ -1,8 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth.js";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage/index.js";
+import { setupAuth, registerAuthRoutes, isAuthenticated, isAdminOrMaster, isMaster } from "./auth.js";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -10,29 +9,19 @@ export async function registerRoutes(
 ): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
-  registerObjectStorageRoutes(app);
 
-  app.get("/api/users", isAuthenticated, async (req: any, res) => {
+  app.get("/api/users", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const allUsers = await storage.getAllUsers();
-      res.json(allUsers);
+      const safe = allUsers.map(({ password: _, ...rest }) => rest);
+      res.json(safe);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
-  app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/users/:id/role", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const { role } = req.body;
       if (!["admin", "technician"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
@@ -41,6 +30,21 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
+  app.delete("/api/users/:id", isAuthenticated, isMaster, async (req: any, res) => {
+    try {
+      if (req.params.id === req.user.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 
@@ -128,13 +132,8 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/quotations", isAuthenticated, async (req: any, res) => {
+  app.post("/api/quotations", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Only admin can create quotations" });
-      }
 
       const { items, ...quotData } = req.body;
       const quotation = await storage.createQuotation(quotData);
@@ -155,13 +154,8 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/quotations/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/quotations/:id", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       await storage.deleteQuotation(parseInt(req.params.id));
       res.json({ success: true });
     } catch (error) {
@@ -200,13 +194,8 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/purchase-orders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/purchase-orders", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const po = await storage.createPurchaseOrder(req.body);
       res.json(po);
     } catch (error) {
@@ -264,13 +253,8 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/work-orders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/work-orders", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
 
       const { items, ...woData } = req.body;
       const workOrder = await storage.createWorkOrder(woData);
@@ -341,13 +325,8 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/work-orders/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/work-orders/:id", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const updated = await storage.updateWorkOrder(parseInt(req.params.id), req.body);
       res.json(updated);
     } catch (error) {
@@ -376,13 +355,8 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/invoices", isAuthenticated, async (req: any, res) => {
+  app.post("/api/invoices", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
 
       const { items, ...invData } = req.body;
       const invoice = await storage.createInvoice(invData);
@@ -403,13 +377,8 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/invoices/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/invoices/:id", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       await storage.deleteInvoice(parseInt(req.params.id));
       res.json({ success: true });
     } catch (error) {
@@ -417,13 +386,8 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/invoices/:id/mark-paid", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/invoices/:id/mark-paid", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const updated = await storage.updateInvoiceStatus(parseInt(req.params.id), "paid");
       if (!updated) return res.status(404).json({ message: "Invoice not found" });
       res.json(updated);
@@ -432,13 +396,8 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/search", isAuthenticated, async (req: any, res) => {
+  app.get("/api/search", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const query = req.query.q as string || "";
       if (!query) return res.json({ quotations: [], workOrders: [], invoices: [], purchaseOrders: [] });
       const results = await storage.searchDocuments(query);
@@ -448,13 +407,8 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
+  app.get("/api/dashboard", isAuthenticated, isAdminOrMaster, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       const data = await storage.getDashboardData();
       res.json(data);
     } catch (error) {

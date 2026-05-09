@@ -61,7 +61,9 @@ function TechnicianRouter() {
 
 function AuthenticatedApp() {
   const { user } = useAuth();
-  const isAdmin = (user as any)?.role === "admin";
+  const role = (user as any)?.role;
+  const isAdmin = role === "admin" || role === "master";
+  const isMaster = role === "master";
 
   const style = {
     "--sidebar-width": "16rem",

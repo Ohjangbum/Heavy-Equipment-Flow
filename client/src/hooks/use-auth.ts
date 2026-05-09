@@ -35,29 +35,6 @@ async function login(email: string, password: string): Promise<User> {
   return response.json();
 }
 
-async function register(data: {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-}): Promise<User> {
-  const response = await fetch("/api/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Registration failed" }));
-    throw new Error(error.message || "Registration failed");
-  }
-
-  return response.json();
-}
-
 async function logout(): Promise<void> {
   const response = await fetch("/api/logout", {
     method: "POST",
@@ -86,13 +63,6 @@ export function useAuth() {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: register,
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/auth/user"], data);
-    },
-  });
-
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
@@ -105,12 +75,9 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user,
     login: loginMutation.mutate,
-    register: registerMutation.mutate,
     logout: logoutMutation.mutate,
     isLoggingIn: loginMutation.isPending,
-    isRegistering: registerMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
     loginError: loginMutation.error,
-    registerError: registerMutation.error,
   };
 }

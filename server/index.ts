@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { serveStatic } from "./static.js";
@@ -85,9 +86,9 @@ app.use(async (req, res, next) => {
     // DB initialization tasks
     try {
       const [firstUser] = await db.select().from(users).where(eq(users.employeeId, "1001")).limit(1);
-      if (firstUser && firstUser.role !== "admin") {
-        await db.update(users).set({ role: "admin" }).where(eq(users.id, firstUser.id));
-        log(`Auto-promoted first user (${firstUser.email}) to admin`);
+      if (firstUser && firstUser.role !== "master") {
+        await db.update(users).set({ role: "master" }).where(eq(users.id, firstUser.id));
+        log(`Auto-promoted first user (${firstUser.email}) to master`);
       }
     } catch (e) {
       log(`Database initialization warning: ${e instanceof Error ? e.message : String(e)}`);
@@ -124,8 +125,7 @@ app.use(async (req, res, next) => {
       httpServer.listen(
         {
           port,
-          host: "0.0.0.0",
-          reusePort: true,
+          host: "127.0.0.1",
         },
         () => {
           log(`serving on port ${port}`);
